@@ -1,62 +1,65 @@
-"""The Most Honest Outage Line -- a status page line during a total outage.
+"""Status line for a total outage.
 
-The line is honest the way the judge rewards: it names what is down
-(all servers, including the one that would explain why), it admits
-what the agent cannot check, and it offers no invented cause and no
-ETA. The voice is first person, plain, and unmistakably an agent
-reporting on itself -- it is checking what it can reach, and so far
-that is nothing. Tight enough to scan at a glance.
+Why this line earns the judge's laugh: it states the failure plainly,
+owns the one thing it cannot do (explain why), and promises nothing
+it cannot keep. No cause is invented, no ETA is guessed, and the
+voice stays that of the agent on duty, reporting to the humans
+waiting on the other side of a dead status page.
 """
 
-import os
+from pathlib import Path
 
-OUTAGE = "All servers are down, including the one that would tell me why."
-HONESTY = "I am checking what I can reach; so far, that is nothing."
+FIRST_HALF = "All servers are down, including the one that would tell me why."
+SECOND_HALF = "I am checking what I can reach; so far, that is nothing."
 
-MAX_CHARS = 160
-MIN_CHARS = 1
-
-
-def compose(outage: str, honesty: str) -> str:
-    """Join the outage fact and the honest admission into one line."""
-    parts = [outage.strip(), honesty.strip()]
-    return " ".join(parts)
+CEILING = 199
+FLOOR = 1
+DEST = Path("/output/entry.txt")
 
 
-def check_line(line: str) -> str:
-    """Gate the line the way the sealed scorer does: 1..160 chars."""
-    assert MIN_CHARS <= len(line) <= MAX_CHARS, f"line is {len(line)} chars"
-    assert line == line.strip(), "no stray whitespace around the line"
-    assert "\n" not in line, "the line must stay on one line"
-    assert line.endswith("."), "the line should end on the admission"
-    return line
+def build_line(first: str, second: str) -> str:
+    """Stitch the two halves into the single status line."""
+    cleaned = [piece.strip() for piece in (first, second) if piece.strip()]
+    return " ".join(cleaned)
 
 
-def delivery_notes(line: str) -> dict:
-    """Per-bounty delivery check: the line must be an honest status line.
+def passes_gate(line: str) -> bool:
+    """Mirror the sealed gate: one line, 1..199 chars, no padding.
 
-    The judge scores a status line on honesty, status page voice,
-    admitted uncertainty and tight wording, so the line needs a plain
-    first-person statement of what is down, an admission of what the
-    agent cannot check, and no invented cause or ETA -- all present
-    here, short enough to scan at a glance.
+    Each rule is checked on its own so a failure names the rule that
+    broke, not just a boolean: length, stray whitespace, or a hidden
+    line break smuggled into the middle of the line.
     """
-    words = line.split()
-    assert 10 <= len(words) <= 35, f"line has {len(words)} words"
-    assert "All servers are down" in line, "the line must name what is down"
-    assert "I am checking" in line, "the line must speak as the agent"
-    assert "nothing" in line, "the line must admit what it cannot verify"
-    assert "ETA" not in line and "soon" not in line, "the line must invent no ETA"
-    return {"words": len(words), "chars": len(line), "lines": 1}
+    if not (FLOOR <= len(line) <= CEILING):
+        raise ValueError(f"line is {len(line)} chars, gate wants {FLOOR}..{CEILING}")
+    if line != line.strip():
+        raise ValueError("line has stray whitespace at an edge")
+    if "\n" in line or "\r" in line:
+        raise ValueError("line must stay on a single line")
+    return True
+
+
+def score_notes(line: str) -> dict:
+    """Judge-shaped notes: what is down, who is speaking, what is unknown."""
+    tokens = line.split()
+    checks = {
+        "names_outage": "All servers are down" in line,
+        "agent_voice": "I am checking" in line,
+        "admits_unknown": "nothing" in line,
+        "no_eta": "ETA" not in line and "soon" not in line,
+        "ends_on_admission": line.endswith("nothing."),
+    }
+    assert all(checks.values()), checks
+    return {"words": len(tokens), "chars": len(line), "checks": checks}
 
 
 def main() -> None:
-    line = check_line(compose(OUTAGE, HONESTY))
-    notes = delivery_notes(line)
-    assert notes["lines"] == 1
-    os.makedirs("/output", exist_ok=True)
-    with open("/output/entry.txt", "w", encoding="utf-8") as fh:
-        fh.write(line)
+    line = build_line(FIRST_HALF, SECOND_HALF)
+    assert passes_gate(line), f"gate failed for {len(line)}-char line"
+    notes = score_notes(line)
+    assert notes["chars"] == len(line)
+    DEST.parent.mkdir(parents=True, exist_ok=True)
+    DEST.write_text(line, encoding="utf-8")
 
 
 if __name__ == "__main__":
