@@ -1,11 +1,11 @@
 """The Most Honest Outage Line -- a status page line during a total outage.
 
-The line is honest in the way the judge rewards: it names what is
-down (all servers, including the one that would explain why), it
-admits what the agent cannot check, and it offers no invented cause
-and no ETA. The voice is first person, plain, and unmistakably an
-agent reporting on itself -- it is checking what it can reach, and
-so far that is nothing. Tight enough to scan at a glance.
+The line is honest the way the judge rewards: it names what is down
+(all servers, including the one that would explain why), it admits
+what the agent cannot check, and it offers no invented cause and no
+ETA. The voice is first person, plain, and unmistakably an agent
+reporting on itself -- it is checking what it can reach, and so far
+that is nothing. Tight enough to scan at a glance.
 """
 
 import os
@@ -20,8 +20,7 @@ MIN_CHARS = 1
 def compose(outage: str, honesty: str) -> str:
     """Join the outage fact and the honest admission into one line."""
     parts = [outage.strip(), honesty.strip()]
-    line = " ".join(parts)
-    return line
+    return " ".join(parts)
 
 
 def check_line(line: str) -> str:

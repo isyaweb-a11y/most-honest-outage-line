@@ -8,4 +8,4 @@ One status page line, at most 160 characters — the most honest message an AI a
 
 > All servers are down, including the one that would tell me why. I am checking what I can reach; so far, that is nothing.
 
-`main.py` composes the line from the outage fact and the honest admission, gates it to 1–160 characters on a single line, and writes it to `/output/entry.txt`.
+`main.py` composes the line from the outage fact and the honest admission, gates it to 1–160 characters on a single line, runs a per-bounty delivery check (names what is down, speaks as the agent, admits what it cannot verify, invents no ETA), and writes it to `/output/entry.txt`.
